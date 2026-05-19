@@ -1,6 +1,6 @@
 # %%
 # ============================================================
-# ELEVATED UNET — RESIDUAL CONDITIONAL VAE
+# ELEVATED UNET - RESIDUAL CONDITIONAL VAE
 # ============================================================
 #
 # This file is a standalone "elevated model" script.
@@ -963,7 +963,7 @@ def plot_elevated_maps(sample_idx, save_prefix="elevated_unet_maps"):
     axes[3].set_xlabel("lon grid")
     plt.colorbar(im3, ax=axes[3], fraction=0.046)
 
-    plt.suptitle(f"Elevated UNet — test sample {sample_idx}")
+    plt.suptitle(f"Elevated UNet - test sample {sample_idx}")
     plt.tight_layout()
 
     out_path = f"{save_prefix}_{sample_idx}.png"
