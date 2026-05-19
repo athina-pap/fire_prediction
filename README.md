@@ -56,3 +56,124 @@ Main libraries used:
 
 ```bash
 pip install numpy pandas tensorflow scikit-learn matplotlib xgboost lightgbm imbalanced-learn sktime joblib
+```
+
+## Dataset
+
+This dataset provides daily meteorological, hydrological, drought, and fire-weather records across a regular spatial grid covering the entire territory of Greece, including all major island groups.  
+It is designed for machine learning and deep learning models focused on wildfire occurrence prediction.
+
+| Property | Value |
+|---|---|
+| Total records | 108,200 |
+| Unique grid locations | 3,402 |
+| Date range | 2 Jan 2015 – 22 Aug 2025 |
+| Unique dates | 3,432 |
+| Fire event records (`y_fire = 1`) | 26,835 |
+| Grid resolution | 0.1° longitude × 0.2° latitude |
+| Latitude extent | 34.3°N – 42.4°N |
+| Longitude extent | 19.0°E – 29.7°E |
+
+---
+
+## Spatial Coverage
+
+The dataset covers all administrative regions of Greece using a regular ERA5-style reanalysis grid.
+
+Grid cells located entirely over open sea are excluded. Only land and coastal cells with valid data are retained.
+
+Covered regions include:
+
+- Mainland Greece
+  - Attica
+  - Central Greece
+  - Peloponnese
+  - Epirus
+  - Thessaly
+  - Western Greece
+
+- Northern Greece
+  - Macedonia
+  - Thrace
+
+- Crete
+
+- Ionian Islands
+  - Corfu
+  - Kefalonia
+  - Zakynthos
+  - Lefkada
+
+- Aegean Islands
+  - Cyclades
+  - Sporades
+  - Northern Aegean
+
+- Dodecanese
+  - Rhodes
+  - Kos
+  - Lesbos
+  - Chios
+  - Samos
+
+---
+![Dataset Grid Coverage](images/gridCoverage.png)
+## Variables
+
+Each row corresponds to one spatial grid cell on one specific date.
+
+| Column | Unit | Description |
+|---|---|---|
+| `date` | YYYY-MM-DD | Date of the record |
+| `lat` | degrees N | Latitude of the grid cell centre |
+| `lon` | degrees E | Longitude of the grid cell centre |
+| `t2m` | K | 2-metre air temperature |
+| `d2m` | K | 2-metre dew point temperature |
+| `u10` | m/s | 10-metre U-component of wind |
+| `v10` | m/s | 10-metre V-component of wind |
+| `tp` | m | Total precipitation |
+| `fwi` | — | Fire Weather Index |
+| `KBDI` | — | Keetch-Byram Drought Index |
+| `PET` | mm/day | Potential Evapotranspiration |
+| `D` | — | Drought factor |
+| `SPEI_30` | — | Standardised Precipitation-Evapotranspiration Index (30-day) |
+| `SPEI_90` | — | Standardised Precipitation-Evapotranspiration Index (90-day) |
+| `SPEI_180` | — | Standardised Precipitation-Evapotranspiration Index (180-day) |
+| `y_fire` | 0 / 1 | Target variable — wildfire occurrence (`1 = fire recorded`) |
+
+---
+
+## Data Sources
+
+The dataset integrates information from multiple environmental and fire-related sources:
+
+- ERA5 reanalysis meteorological data
+- Fire Weather Index (FWI) products
+- Drought indicators and hydrological indices
+- Satellite-based burned area products
+- Official wildfire perimeter datasets
+
+---
+
+## Notes
+
+- Meteorological variables (`t2m`, `d2m`, `u10`, `v10`, `tp`) originate from ERA5 reanalysis datasets.
+- SPEI variables may contain `NaN` values at early timestamps due to rolling baseline warm-up periods.
+- The `y_fire` label is derived from wildfire perimeter and burned-area observations.
+- Coordinates represent the centre of each spatial grid cell.
+- The dataset spans approximately 10 years of daily observations.
+
+---
+
+## Intended Usage
+
+This dataset is intended for:
+
+- Wildfire occurrence prediction
+- Spatiotemporal deep learning
+- Explainable AI (XAI) research
+- Climate-risk modelling
+- Environmental data mining
+- Fire danger assessment
+
+
