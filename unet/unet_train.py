@@ -1,42 +1,42 @@
 #%%
 # ============================================================
-# WILDFIRE PREDICTION — IMPROVED UNET PIPELINE
+# WILDFIRE PREDICTION - IMPROVED UNET PIPELINE
 # ============================================================
 #
 # Key improvements over previous versions:
 #
-#   1. DATA AUDIT block — prints label semantics diagnostics
+#   1. DATA AUDIT block - prints label semantics diagnostics
 #      so you can verify y_fire means what you think it means
 #      before spending GPU hours training on it.
 #
-#   2. GAP-AWARE WINDOWING — detects holes in the date
+#   2. GAP-AWARE WINDOWING - detects holes in the date
 #      timeline (279 gaps in this dataset, up to 20 days long)
 #      and skips any 7-day window that crosses a gap.
 #      Previously day-1 and day-22 were treated as consecutive.
 #
-#   3. SPEI MISSINGNESS INDICATORS — instead of filling 41-74%
+#   3. SPEI MISSINGNESS INDICATORS - instead of filling 41-74%
 #      NaN SPEI values with the column median (which invents
 #      data), we add a binary "was this observed?" flag for
 #      each SPEI column, then fill with 0. The model can now
 #      learn "this feature is absent" as a signal.
 #
-#   4. CYCLIC DAY-OF-YEAR — sin/cos encoding of day-of-year
+#   4. CYCLIC DAY-OF-YEAR - sin/cos encoding of day-of-year
 #      gives the model an explicit seasonality signal without
 #      any ordinal assumptions.
 #
-#   5. GLOBAL BOUNDING BOX CROP — crops the full 33x44 grid
+#   5. GLOBAL BOUNDING BOX CROP - crops the full 33x44 grid
 #      to the tightest rectangle containing all valid cells.
 #      Reduces wasted capacity on structural zeros.
 #
-#   6. MASKED FOCAL LOSS + MASKED EVALUATION — loss and ALL
+#   6. MASKED FOCAL LOSS + MASKED EVALUATION - loss and ALL
 #      metrics (PR-AUC, ROC-AUC, F1, confusion matrix) are
 #      computed only over valid (observed) pixels. Background
 #      zeros are excluded from everything.
 #
-#   7. CORRECT NORMALIZATION — mean/std computed from valid
+#   7. CORRECT NORMALIZATION - mean/std computed from valid
 #      train pixels only. Invalid cells zeroed after norm.
 #
-#   8. SHAP + LIME — pixel-level explainability with corrected
+#   8. SHAP + LIME - pixel-level explainability with corrected
 #      LIME sample size (500) and valid-pixel-only background.
 #
 # ============================================================
@@ -109,13 +109,13 @@ if "y_fire" not in df.columns:
     raise ValueError("Column y_fire not found.")
 
 # ============================================================
-# STAGE 1 — DATA AUDIT
+# STAGE 1 - DATA AUDIT
 # Print diagnostics to help you verify label semantics.
 # Read this output before trusting any model results.
 # ============================================================
 
 print("\n" + "="*60)
-print("STAGE 1 — DATA AUDIT")
+print("STAGE 1 - DATA AUDIT")
 print("="*60)
 print(f"Rows: {len(df):,}   Date range: {df['date'].min().date()} → {df['date'].max().date()}")
 print(f"Unique dates: {df['date'].nunique():,}")
@@ -131,7 +131,7 @@ persistence = multi.groupby(["lat", "lon"])["y_fire"].apply(
     lambda x: (x.values[1:] == x.values[:-1]).mean()
 ).mean()
 print(f"Label persistence (same as previous day, per location): {persistence:.3f}  "
-      f"({'WARNING: high — may be a static zone label, not dynamic fire' if persistence > 0.75 else 'ok'})")
+      f"({'WARNING: high - may be a static zone label, not dynamic fire' if persistence > 0.75 else 'ok'})")
 
 print("\nFire rate by month:")
 df["_month"] = df["date"].dt.month
@@ -158,7 +158,7 @@ print("Locations that ALWAYS have fire:",
 print("="*60 + "\n")
 
 # ============================================================
-# STAGE 2 — FEATURE ENGINEERING
+# STAGE 2 - FEATURE ENGINEERING
 # ============================================================
 
 # 2a. SPEI missingness indicators (before filling)
@@ -176,7 +176,7 @@ df[base_feature_cols] = df[base_feature_cols].fillna(
 df["doy_sin"] = np.sin(2 * np.pi * df["date"].dt.dayofyear / 365).astype(np.float32)
 df["doy_cos"] = np.cos(2 * np.pi * df["date"].dt.dayofyear / 365).astype(np.float32)
 
-# Final feature list (order matters — saved to meta for inference)
+# Final feature list (order matters - saved to meta for inference)
 spei_obs_cols = [f"{c}_obs" for c in spei_cols]
 feature_cols  = base_feature_cols + spei_obs_cols + ["doy_sin", "doy_cos"]
 
@@ -186,7 +186,7 @@ C = len(feature_cols)
 print(f"Features ({C}):", feature_cols)
 
 # ============================================================
-# STAGE 3 — SPATIAL GRID
+# STAGE 3 - SPATIAL GRID
 # ============================================================
 
 lat_min = df["lat"].min()
@@ -221,7 +221,7 @@ df["j_crop"] = df["j"] - j_min_global
 print(f"Full grid: {H_full}×{W_full}  →  Cropped grid: {H}×{W}")
 
 # ============================================================
-# STAGE 4 — DAILY TENSORS + VALID MASK (on cropped grid)
+# STAGE 4 - DAILY TENSORS + VALID MASK (on cropped grid)
 # ============================================================
 
 dates_sorted = np.sort(df["date"].unique())
@@ -245,7 +245,7 @@ print(f"frames: {frames.shape}  valid pixel rate: {valid_mask.mean():.4f}")
 print(f"Fire rate over valid pixels: {labels[valid_mask==1].mean():.4f}")
 
 # ============================================================
-# STAGE 5 — GAP-AWARE WINDOWING
+# STAGE 5 - GAP-AWARE WINDOWING
 # Only build windows from fully contiguous date runs.
 # ============================================================
 
@@ -277,7 +277,7 @@ M_seq = np.stack(
 print(f"X_seq: {X_seq.shape}  Y_seq: {Y_seq.shape}  M_seq: {M_seq.shape}")
 
 # ============================================================
-# STAGE 6 — TIME SPLIT
+# STAGE 6 - TIME SPLIT
 # ============================================================
 
 N      = X_seq.shape[0]
@@ -291,7 +291,7 @@ X_test,  Y_test,  M_test  = X_seq[n_val:],         Y_seq[n_val:],         M_seq[
 print(f"Train: {X_train.shape[0]}  Val: {X_val.shape[0]}  Test: {X_test.shape[0]}")
 
 # ============================================================
-# STAGE 7 — NORMALIZATION (valid train pixels only)
+# STAGE 7 - NORMALIZATION (valid train pixels only)
 # ============================================================
 
 # Collect the valid_mask for all time steps in each train window
@@ -332,7 +332,7 @@ X_test  = zero_invalid_inputs(X_test,  valid_ends_test)
 print("Normalization done.")
 
 # ============================================================
-# STAGE 8 — COLLAPSE TIME → CHANNELS  (N, T, H, W, C) → (N, H, W, T*C)
+# STAGE 8 - COLLAPSE TIME → CHANNELS  (N, T, H, W, C) → (N, H, W, T*C)
 # ============================================================
 
 def collapse_time_to_channels(X):
@@ -352,7 +352,7 @@ Y_val_m   = np.concatenate([Y_val,   M_val  ], axis=-1)
 Y_test_m  = np.concatenate([Y_test,  M_test ], axis=-1)
 
 # ============================================================
-# STAGE 9 — MASKED FOCAL LOSS
+# STAGE 9 - MASKED FOCAL LOSS
 # Loss is computed only over valid (observed) grid cells.
 # ============================================================
 
@@ -376,7 +376,7 @@ def masked_focal_loss(alpha=0.85, gamma=2.0):
     return loss
 
 # ============================================================
-# STAGE 10 — UNET MODEL
+# STAGE 10 - UNET MODEL
 # Pads to next multiple of 16 internally, crops back to (H, W).
 # ============================================================
 
@@ -437,7 +437,7 @@ unet.compile(
 unet.summary()
 
 # ============================================================
-# STAGE 11 — TRAIN
+# STAGE 11 - TRAIN
 # Monitor val_loss (masked), NOT val_pr_auc.
 # val_pr_auc computed on the full grid is inflated by background zeros.
 # ============================================================
@@ -474,7 +474,7 @@ history = unet.fit(
 )
 
 # ============================================================
-# STAGE 12 — MASKED EVALUATION
+# STAGE 12 - MASKED EVALUATION
 # ALL metrics computed on valid pixels only.
 # ============================================================
 
@@ -537,7 +537,7 @@ val_metrics  = evaluate_masked("VAL",  Y_val,  val_prob,  M_val,  best_thr)
 test_metrics = evaluate_masked("TEST", Y_test, test_prob, M_test, best_thr)
 
 # ============================================================
-# STAGE 13 — SAVE
+# STAGE 13 - SAVE
 # ============================================================
 
 unet.save(MODEL_PATH)
@@ -575,7 +575,7 @@ meta = {
         "At inference: fill SPEI_*_obs=0/1, doy_sin/cos from date. "
         "Normalize with saved mean/std. "
         "Feed cropped grid [i_min_global:i_min_global+H, j_min_global:j_min_global+W]. "
-        "Output is fire probability for that crop — place back into full grid at same offsets."
+        "Output is fire probability for that crop - place back into full grid at same offsets."
     ),
 }
 
@@ -586,7 +586,7 @@ print(f"\nSaved: {MODEL_PATH}  {WEIGHTS_PATH}  {META_PATH}")
 
 
 # ============================================================
-# STAGE 14 — SHAP + LIME EXPLAINABILITY
+# STAGE 14 - SHAP + LIME EXPLAINABILITY
 # ============================================================
 # Both methods use a pixel-wrapper model that extracts a single
 # scalar output (probability at target pixel), making SHAP and
@@ -594,7 +594,7 @@ print(f"\nSaved: {MODEL_PATH}  {WEIGHTS_PATH}  {META_PATH}")
 #
 # Improvement over previous version:
 #   - LIME background restricted to valid pixels only
-#   - LIME num_samples raised to 500 (was 200 — too low for 84+ features)
+#   - LIME num_samples raised to 500 (was 200 - too low for 84+ features)
 #   - SHAP background sampled from valid-pixel rows
 # ============================================================
 
@@ -604,7 +604,7 @@ try:
     import matplotlib.pyplot as plt
 
     print("\n" + "="*60)
-    print("STAGE 14 — SHAP + LIME")
+    print("STAGE 14 - SHAP + LIME")
     print("="*60)
 
     si = EXPLAIN_SAMPLE_INDEX
@@ -650,7 +650,7 @@ try:
     valid_bg_pool   = X_test_u[valid_test_mask]
 
     if len(valid_bg_pool) < SHAP_BG_SIZE:
-        print(f"  Only {len(valid_bg_pool)} valid samples at ({ti},{tj}) — using all for background")
+        print(f"  Only {len(valid_bg_pool)} valid samples at ({ti},{tj}) - using all for background")
         shap_bg = valid_bg_pool.astype(np.float32)
     else:
         idx = np.random.choice(len(valid_bg_pool), SHAP_BG_SIZE, replace=False)
@@ -753,12 +753,12 @@ try:
         print(f"LIME failed: {e!r}")
 
 except ImportError as e:
-    print(f"\nSHAP/LIME not installed — skipping explainability. ({e})")
+    print(f"\nSHAP/LIME not installed - skipping explainability. ({e})")
     print("Install with: pip install shap lime")
 
 
 # ============================================================
-# STAGE 15 — FIRE PROBABILITY MAP (single date, for inspection)
+# STAGE 15 - FIRE PROBABILITY MAP (single date, for inspection)
 # ============================================================
 
 try:
@@ -794,7 +794,7 @@ try:
     axes[2].set_title("Valid mask (white=observed)")
     axes[2].set_xlabel("lon grid")
 
-    plt.suptitle("Test set — last sample", fontsize=13)
+    plt.suptitle("Test set - last sample", fontsize=13)
     plt.tight_layout()
     plt.savefig("fire_prob_map.png", dpi=150)
     plt.show()
@@ -852,7 +852,7 @@ def plot_fire_heatmaps(sample_idx, save_prefix="unet_heatmap"):
     axes[2].set_xlabel("Longitude grid")
     plt.colorbar(im2, ax=axes[2], fraction=0.046)
 
-    plt.suptitle(f"UNet masked prediction — test sample {sample_idx}")
+    plt.suptitle(f"UNet masked prediction - test sample {sample_idx}")
     plt.tight_layout()
 
     out_path = f"{save_prefix}_{sample_idx}.png"
