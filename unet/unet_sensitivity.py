@@ -291,7 +291,7 @@ for ax in axes.ravel():
     ax.set_xlabel("lon grid")
     ax.set_ylabel("lat grid")
 
-plt.suptitle(f"Elevated UNet explanation maps — sample {SAMPLE_INDEX}")
+plt.suptitle(f"Elevated UNet explanation maps - sample {SAMPLE_INDEX}")
 plt.tight_layout()
 plt.savefig("elevated_unet_occlusion_sensitivity.png", dpi=150)
 plt.show()
